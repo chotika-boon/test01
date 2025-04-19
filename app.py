@@ -2,29 +2,43 @@ import streamlit as st
 from openai import OpenAI
 import os
 
-# สร้าง OpenAI client ด้วย API key จาก environment variable
+# Init OpenAI Client
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-st.set_page_config(page_title="Chat with GPT-4", page_icon="🤖")
-st.title("🤖 Chat with GPT-4")
+# ตั้งชื่อหน้าเว็บ
+st.set_page_config(page_title="💬 GPT-4 Chat", page_icon="🤖")
+st.title("💬 GPT-4 Chatbot")
 
-# กล่องรับข้อความจากผู้ใช้
-user_input = st.text_input("💬 Ask something")
+# สร้างตัวแปร session_state สำหรับเก็บประวัติ
+if "messages" not in st.session_state:
+    st.session_state.messages = [
+        {"role": "system", "content": "You are a helpful assistant."}
+    ]
 
-# เมื่อผู้ใช้กรอกข้อความ
+# แสดงประวัติการสนทนา
+for msg in st.session_state.messages[1:]:  # ข้าม system
+    role = "🧑‍💻 You" if msg["role"] == "user" else "🤖 GPT-4"
+    st.chat_message(role).write(msg["content"])
+
+# กล่องรับข้อความใหม่
+user_input = st.chat_input("Ask something...")
+
 if user_input:
+    # เพิ่มข้อความผู้ใช้ลงประวัติ
+    st.session_state.messages.append({"role": "user", "content": user_input})
+    st.chat_message("🧑‍💻 You").write(user_input)
+
+    # เรียก GPT-4 ตอบกลับ
     try:
-        # ส่งข้อความไปยัง GPT-4
         response = client.chat.completions.create(
             model="gpt-4",
-            messages=[
-                {"role": "user", "content": user_input}
-            ]
+            messages=st.session_state.messages
         )
+        assistant_reply = response.choices[0].message.content
 
-        # แสดงผลลัพธ์ที่ได้จาก GPT
-        st.markdown("**🧠 GPT-4 says:**")
-        st.success(response.choices[0].message.content)
+        # เพิ่มคำตอบ GPT ลงประวัติ
+        st.session_state.messages.append({"role": "assistant", "content": assistant_reply})
+        st.chat_message("🤖 GPT-4").write(assistant_reply)
 
     except Exception as e:
         st.error(f"❌ Error: {e}")

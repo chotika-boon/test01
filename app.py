@@ -1,24 +1,17 @@
+import streamlit as st
 import openai
+import os
 
-openai.api_key = 'YOUR_API_KEY'  # เปลี่ยนเป็น API key ของคุณ
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
-def stream_chat(prompt):
+st.title("Chat with GPT")
+user_input = st.text_input("Ask something:")
+
+if user_input:
     response = openai.ChatCompletion.create(
         model="gpt-4",
         messages=[
-            {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", "content": prompt}
-        ],
-        stream=True  # เปิดโหมด Streaming
+            {"role": "user", "content": user_input}
+        ]
     )
-
-    for chunk in response:
-        if 'choices' in chunk:
-            delta = chunk['choices'][0]['delta']
-            if 'content' in delta:
-                print(delta['content'], end='', flush=True)
-
-if __name__ == "__main__":
-    user_prompt = input("You: ")
-    print("ChatGPT: ", end='', flush=True)
-    stream_chat(user_prompt)
+    st.write(response.choices[0].message['content'])
